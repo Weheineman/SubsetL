@@ -1,16 +1,15 @@
 # SubsetL
 A simple DSL to manipulate finite sets. Inspired by the SetL language.
 
-##Build
-Stack is necessary to run this project. It can be found here:
-https://docs.haskellstack.org/en/stable/README/
+## Build
+Stack is necessary to run this project. It can be found [here](https://docs.haskellstack.org/en/stable/README/).
 
 
 ```
 stack setup
 ```
 
-If you don't want to modify MyLexer.x or MyParser.y, skip this command.
+Every time MyLexer.x or MyParser.y are modified, the corresponding .hs files have to be generated. There is a bash script for that:
 
 ```
 ./generateParser
@@ -22,7 +21,7 @@ Once MyParser.hs and MyLexer.hs have been generated, the project can be built.
 stack build
 ```
 
-##Run
+## Run
 Save your programs in the programs folder. Execute them with:
 
 ```
