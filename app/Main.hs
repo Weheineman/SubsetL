@@ -9,10 +9,13 @@ import           State
 import           Common
 import           TypeEval
 import           Eval
+import           System.Environment
+
 
 main :: IO ()
 main = do
-  file <- getContents
+  args <- getArgs
+  file <- readFile $ "programs/" ++ (head args)
   let ast = (MyParser.parse . MyLexer.lexer) file in do
     print ast
     print $ typeCheck ast

@@ -1,0 +1,5 @@
+#!/bin/bash
+alex MyLexer.x
+happy MyParser.y
+mv MyLexer.hs src/MyLexer.hs
+mv MyParser.hs src/MyParser.hs
