@@ -1,0 +1,14 @@
+set <[int, int]> R := {[1,2], [4,3], [1,1], [2,2], [3,3], [4,4], [2,1], [3,4]};
+
+set <[int, int]> ReflexiveSet(set <[int, int]> R) := {x in R | [first x, first x]} union {x in R | [second x, second x]};
+set <[int, int]> SymmetricSet(set <[int, int]> R) := {x in R | [second x, first x]};
+
+bool IsTransitive(set <[int, int]> R) := forall x in R, y in R : second x != first y or [first x, second y] elem R;
+
+bool IsEquivalence(set <[int, int]> R) :=
+  (ReflexiveSet(R) subsetEq R) and
+  (SymmetricSet(R) subsetEq R) and
+  IsTransitive(R);
+
+
+print(IsEquivalence(R))
