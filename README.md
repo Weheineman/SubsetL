@@ -9,7 +9,7 @@ Stack is necessary to run this project. It can be found [here](https://docs.hask
 stack setup
 ```
 
-Every time MyLexer.x or MyParser.y are modified, the corresponding .hs files have to be generated. There is a bash script for that:
+Every time MyLexer.x or MyParser.y are modified, the corresponding .hs files have to be generated. [Alex](https://www.haskell.org/alex/) and [Happy](https://www.haskell.org/happy/) are required for this step. This command is not needed out of the box.
 
 ```
 ./generateParser
