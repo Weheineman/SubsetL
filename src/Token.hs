@@ -1,7 +1,6 @@
 module Token where
 
 data Token =
-    TokenPrint       |
     TokenTInt        |
     TokenTBool       |
     TokenTSet        |

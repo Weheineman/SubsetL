@@ -24,7 +24,6 @@ import Token
       '='             { TokenEq }
       '!='            { TokenNEq }
       '#'             { TokenCard }
-      print           { TokenPrint }
       tint            { TokenTInt }
       tbool           { TokenTBool }
       set             { TokenTSet }
@@ -73,7 +72,6 @@ Stm
   : Type id ':=' Exp                        { VarAssStm $1 $2 $4 }
   | Type id '(' Type id ')' ':=' Exp        { FunDeclStm $1 $2 $4 $5 $8 }
   | Stm ';' Stm                             { CompoundStm $1 $3 }
-  | print '(' Exp ')'                       { PrintStm $3 }
 
 ExpList
   : Exp ',' ExpList                         { ExpList $1 $3 }

@@ -11,4 +11,4 @@ bool IsEquivalence(set <[int, int]> R) :=
   IsTransitive(R);
 
 
-print(IsEquivalence(R))
+bool IsREquivalence := IsEquivalence(R)

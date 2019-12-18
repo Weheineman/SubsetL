@@ -24,10 +24,6 @@ evalStm (VarAssStm ty var ex) = do
 evalStm (FunDeclStm retType funId argType argId ex) = do
   putValue funId $ VFun argId ex
   return ()
-evalStm (PrintStm ex) = do
--- GUIDIOS: Como printeamos aca??? State deberia ser algo de IO.
-  evalExp ex
-  return ()
 
 -- Generates a list containing all the results of evaluating the
 -- expressions in the ExpList.

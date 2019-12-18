@@ -35,9 +35,6 @@ typeStm (FunDeclStm retType funId argType argId ex) = do
   checkEqualType retType ty ex
   putValue funId (VType $ TFun argType retType)
   return ()
-typeStm (PrintStm e) = do
-  typeExp e
-  return ()
 
 -- Checks the type of an Expression List.
 typeExpList

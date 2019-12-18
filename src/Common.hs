@@ -34,7 +34,6 @@ data Stm
     = CompoundStm Stm Stm
     | VarAssStm Type Id Exp
     | FunDeclStm Type Id Type Id Exp
-    | PrintStm Exp
 
 -- Pretty statement printing.
 instance Show Stm where
@@ -50,7 +49,6 @@ instance Show Stm where
       ++ show argId
       ++ ") := "
       ++ show ex
-  show (PrintStm ex) = "print(" ++ show ex ++ ")"
 
 -- Expressions.
 data Exp

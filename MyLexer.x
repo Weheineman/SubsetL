@@ -13,7 +13,6 @@ tokens :-
 
   $white+				;
   "--".*				;
-  "print"               { \s -> TokenPrint }
   "set"                 { \s -> TokenTSet }
   "int"                 { \s -> TokenTInt }
   "bool"                { \s -> TokenTBool }

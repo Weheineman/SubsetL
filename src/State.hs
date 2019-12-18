@@ -10,11 +10,19 @@ import qualified Control.Monad.Fail            as Fail
 -- Environment.
 type Env = [(Id, RetValue)]
 
+-- Environment formatting.
+envToStr :: Env -> String
+envToStr [] = ""
+envToStr ((var, retVal) : env) = var ++ " := " ++ show retVal ++ "\n" ++ envToStr env
+
 -- Result of a (possibly failed) stateful computation.
 data Result a
     = Value (a, Env)
     | Error Error
-    deriving Show
+
+instance Show (Result a) where
+  show (Value (_, env)) = envToStr env
+  show (Error err) = "Error\n" ++ show err
 
 -- Initial state (empty environment).
 initEnv :: Env

@@ -1,1 +1,1 @@
-print(1..10 union 3)
+set<int>  boom := 1..10 union 3
