@@ -1,13 +1,15 @@
-module Common where
+module AST where
 
-import           Token
 import qualified Data.Set                      as Set
 
--- GUIDIOS: Imagine having error messages.
-parseError :: [Token] -> a
-parseError _ = error "Parse error"
+-- Position in the source file.
+data FilePos = FilePos{line :: Int, col :: Int} deriving (Eq, Ord)
 
--- Variable Identifier
+-- Pretty position printing.
+instance Show FilePos where
+  show (FilePos l c) = "near line " ++ show l ++ ", column " ++ show c
+
+-- Variable Identifier.
 type Id = String
 
 -- Datatypes.
@@ -29,17 +31,19 @@ instance Show Type where
   show (TPair t1 t2) = "[" ++ show t1 ++ ", " ++ show t2 ++ "]"
   show (TFun  t1 t2) = show t1 ++ " -> " ++ show t2
 
--- Statements.
+-- Statements. The FilePos is the position of the variable or function that
+-- is being declared.
 data Stm
     = CompoundStm Stm Stm
-    | VarAssStm Type Id Exp
-    | FunDeclStm Type Id Type Id Exp
+    | VarAssStm Type Id Exp FilePos
+    | FunDeclStm Type Id Type Id Exp FilePos
 
 -- Pretty statement printing.
 instance Show Stm where
   show (CompoundStm stm1 stm2) = show stm1 ++ ";\n" ++ show stm2
-  show (VarAssStm ty var ex  ) = show ty ++ " " ++ show var ++ " := " ++ show ex
-  show (FunDeclStm funType funId argType argId ex) =
+  show (VarAssStm ty var ex _) =
+    show ty ++ " " ++ show var ++ " := " ++ show ex
+  show (FunDeclStm funType funId argType argId ex _) =
     show funType
       ++ " "
       ++ show funId
@@ -50,41 +54,64 @@ instance Show Stm where
       ++ ") := "
       ++ show ex
 
+-- Returns the source file position of the variable or function that is declared
+-- in the statement.
+declFilePos :: Stm -> FilePos
+declFilePos (VarAssStm _ _ _ pos     ) = pos
+declFilePos (FunDeclStm _ _ _ _ _ pos) = pos
+
+
 -- Expressions.
 data Exp
-    = Int Integer
-    | Bool Bool
-    | Pair Exp Exp
-    | EmptySet
-    | SetExt ExpList
-    | SetComp IterList Exp
-    | SetCompFilter IterList Exp Exp
-    | Var Id
-    | RetVal RetValue
-    | FunApp Id Exp
-    | UnOp UnOperator Exp
-    | BinOp BinOperator Exp Exp
-    | Quant Quantifier IterList Exp
+    = Int Integer FilePos
+    | Bool Bool FilePos
+    | Pair Exp Exp FilePos
+    | EmptySet FilePos
+    | SetExt ExpList FilePos
+    | SetComp IterList Exp FilePos
+    | SetCompFilter IterList Exp Exp FilePos
+    | Var Id FilePos
+    | RetVal RetValue FilePos
+    | FunApp Id Exp FilePos
+    | UnOp UnOperator Exp FilePos
+    | BinOp BinOperator Exp Exp FilePos
+    | Quant Quantifier IterList Exp FilePos
     deriving (Eq, Ord)
 
 -- Pretty expression printing.
 instance Show Exp where
-  show (Int  i    )       = show i
-  show (Bool b    )       = show b
-  show (Pair e1 e2)       = "[" ++ show e1 ++ ", " ++ show e2 ++ "]"
-  show EmptySet           = "{}"
-  show (SetExt eList    ) = "{" ++ show eList ++ "}"
-  show (SetComp iList ex) = "{" ++ show iList ++ " | " ++ show ex ++ "}"
-  show (SetCompFilter iList boolEx ex) =
+  show (Int  i _          ) = show i
+  show (Bool b _          ) = show b
+  show (Pair e1 e2 _      ) = "[" ++ show e1 ++ ", " ++ show e2 ++ "]"
+  show (EmptySet _        ) = "{}"
+  show (SetExt eList _    ) = "{" ++ show eList ++ "}"
+  show (SetComp iList ex _) = "{" ++ show iList ++ " | " ++ show ex ++ "}"
+  show (SetCompFilter iList boolEx ex _) =
     "{" ++ show iList ++ " | " ++ show boolEx ++ " | " ++ show ex ++ "}"
-  show (Var    var        ) = var
-  show (RetVal retVal     ) = show retVal
-  show (FunApp funId ex   ) = funId ++ "(" ++ show ex ++ ")"
-  show (UnOp   op    ex   ) = show op ++ " " ++ show ex
-  show (BinOp op ex1   ex2) = show ex1 ++ " " ++ show op ++ " " ++ show ex2
-  show (Quant q  iList ex ) = show q ++ " " ++ show iList ++ " : " ++ show ex
+  show (Var    var    _     ) = var
+  show (RetVal retVal _     ) = show retVal
+  show (FunApp funId ex _   ) = funId ++ "(" ++ show ex ++ ")"
+  show (UnOp   op    ex _   ) = show op ++ " " ++ show ex
+  show (BinOp op ex1   ex2 _) = show ex1 ++ " " ++ show op ++ " " ++ show ex2
+  show (Quant q  iList ex  _) = show q ++ " " ++ show iList ++ " : " ++ show ex
 
--- Lists.
+-- Returns the position of the expression in the file.
+expFilePos :: Exp -> FilePos
+expFilePos (Int  i pos                       ) = pos
+expFilePos (Bool b pos                       ) = pos
+expFilePos (Pair e1 e2 pos                   ) = pos
+expFilePos (EmptySet pos                     ) = pos
+expFilePos (SetExt eList pos                 ) = pos
+expFilePos (SetComp iList ex pos             ) = pos
+expFilePos (SetCompFilter iList boolEx ex pos) = pos
+expFilePos (Var    var    pos                ) = pos
+expFilePos (RetVal retVal pos                ) = pos
+expFilePos (FunApp funId ex pos              ) = pos
+expFilePos (UnOp   op    ex pos              ) = pos
+expFilePos (BinOp op ex1   ex2 pos           ) = pos
+expFilePos (Quant q  iList ex  pos           ) = pos
+
+-- Expression Lists.
 data ExpList
    = SingleExp Exp
    | ExpList Exp ExpList
@@ -194,46 +221,9 @@ instance Show RetValue where
   show (VBool b    ) = show b
   show (VType t    ) = show t
   show (VPair v1 v2) = "(" ++ show v1 ++ ", " ++ show v2 ++ ")"
-  -- GUIDIOS: Esto esta feo
   show (VSet s     ) = show s
   show (VFun arg ex) = arg ++ " -> " ++ show ex
 
--- Possible errors.
-data Error
-    = TypeError Type Type Exp
-    | VarNotFound Id
-    | VarExists Id
-    | DivZero Exp Exp
-    | TypeMatchError String Type Exp
-    | PatternMatchError
-
--- Pretty error printing.
-instance Show Error where
-  show (TypeError t1 t2 ex) =
-    "\nExpected Type:"
-      ++ show t1
-      ++ "\nActual Type:"
-      ++ show t2
-      ++ "\nIn the expression:"
-      ++ show ex
-      ++ "\n"
-  show (VarNotFound var) = "\nVariable " ++ var ++ " used but not declared.\n"
-  show (VarExists   var) = "\nVariable " ++ var ++ " already declared.\n"
-  show (DivZero ex1 ex2) =
-    "\nDivision by zero in expresssion:\n"
-      ++ show ex1
-      ++ "\ndivided by\n"
-      ++ show ex2
-      ++ "\n"
-  show (TypeMatchError typeStr ty ex) =
-    "\nExpected Type matching the following pattern: "
-      ++ typeStr
-      ++ "\nActual Type: "
-      ++ show ty
-      ++ "\nIn the expression: "
-      ++ show ex
-  show PatternMatchError
-    = "A pattern matching has failed inside a do block. This should not happen, I'm sorry.\n"
 
 -- Replaces all ocurrences of the given variable in the Iterator List by the
 -- given return value.
@@ -258,24 +248,28 @@ replaceVarInExpList (ExpList ex exList) var retVal = ExpList
 -- Replaces all ocurrences of the given variable in the expression by the given
 -- return value.
 replaceVarInExp :: Exp -> Id -> RetValue -> Exp
-replaceVarInExp (Pair ex1 ex2) var retVal =
-  Pair (replaceVarInExp ex1 var retVal) (replaceVarInExp ex2 var retVal)
-replaceVarInExp (SetExt el) var retVal =
-  SetExt $ replaceVarInExpList el var retVal
-replaceVarInExp (SetComp il ex) var retVal =
-  SetComp (replaceVarInItList il var retVal) (replaceVarInExp ex var retVal)
-replaceVarInExp (SetCompFilter il boolEx ex) var retVal = SetCompFilter
+replaceVarInExp (Pair ex1 ex2 pos) var retVal =
+  Pair (replaceVarInExp ex1 var retVal) (replaceVarInExp ex2 var retVal) pos
+replaceVarInExp (SetExt el pos) var retVal =
+  SetExt (replaceVarInExpList el var retVal) pos
+replaceVarInExp (SetComp il ex pos) var retVal =
+  SetComp (replaceVarInItList il var retVal) (replaceVarInExp ex var retVal) pos
+replaceVarInExp (SetCompFilter il boolEx ex pos) var retVal = SetCompFilter
   (replaceVarInItList il var retVal)
   (replaceVarInExp boolEx var retVal)
   (replaceVarInExp ex var retVal)
-replaceVarInExp (Var var') var retVal =
-  if var' == var then RetVal retVal else (Var var')
-replaceVarInExp (FunApp funId ex) var retVal =
-  FunApp funId $ replaceVarInExp ex var retVal
-replaceVarInExp (UnOp op ex) var retVal =
-  UnOp op $ replaceVarInExp ex var retVal
-replaceVarInExp (BinOp op ex1 ex2) var retVal =
-  BinOp op (replaceVarInExp ex1 var retVal) (replaceVarInExp ex2 var retVal)
-replaceVarInExp (Quant q iList ex) var retVal =
-  Quant q (replaceVarInItList iList var retVal) (replaceVarInExp ex var retVal)
+  pos
+replaceVarInExp (Var var' pos) var retVal =
+  if var' == var then RetVal retVal pos else Var var' pos
+replaceVarInExp (FunApp funId ex pos) var retVal =
+  FunApp funId (replaceVarInExp ex var retVal) pos
+replaceVarInExp (UnOp op ex pos) var retVal =
+  UnOp op (replaceVarInExp ex var retVal) pos
+replaceVarInExp (BinOp op ex1 ex2 pos) var retVal =
+  BinOp op (replaceVarInExp ex1 var retVal) (replaceVarInExp ex2 var retVal) pos
+replaceVarInExp (Quant q iList ex pos) var retVal = Quant
+  q
+  (replaceVarInItList iList var retVal)
+  (replaceVarInExp ex var retVal)
+  pos
 replaceVarInExp ex _ _ = ex

@@ -1,6 +1,9 @@
-module TypeEval where
+module TypeEval
+  ( typeCheck
+  )
+where
 
-import           Common
+import           AST
 import           State
 import qualified Control.Monad.Fail            as Fail
 
@@ -25,15 +28,15 @@ typeStm :: (MonadState m, MonadError m, Fail.MonadFail m) => Stm -> m ()
 typeStm (CompoundStm s1 s2) = do
   typeStm s1
   typeStm s2
-typeStm (VarAssStm ty var ex) = do
+typeStm (VarAssStm ty var ex pos) = do
   ty' <- typeExp ex
   checkEqualType ty ty' ex
-  putValue var (VType ty)
+  putValue var (VType ty) pos
   return ()
-typeStm (FunDeclStm retType funId argType argId ex) = do
+typeStm (FunDeclStm retType funId argType argId ex pos) = do
   ty <- typeExp $ replaceVarInExp ex argId (VType argType)
   checkEqualType retType ty ex
-  putValue funId (VType $ TFun argType retType)
+  putValue funId (VType $ TFun argType retType) pos
   return ()
 
 -- Checks the type of an Expression List.
@@ -87,8 +90,8 @@ typeIterList
 typeIterList (SingleIt var ex) = do
   t <- typeExp ex
   case t of
-    TSet elemType -> putValue var (VType elemType)
-    _      -> throwTypeMatch "set<Type>" t ex
+    TSet elemType -> putValue var (VType elemType) (expFilePos ex)
+    _             -> throwTypeMatch "set<Type>" t ex
   return ()
 typeIterList (IterList var ex iterList) = do
   typeIterList (SingleIt var ex)
@@ -116,93 +119,93 @@ typeQuant iterList ex = do
 
 -- Checks the type of an expression.
 typeExp :: (MonadState m, MonadError m, Fail.MonadFail m) => Exp -> m Type
-typeExp (Int  _  ) = return TInt
-typeExp (Bool _  ) = return TBool
-typeExp (Pair f s) = do
+typeExp (Int  _ _  ) = return TInt
+typeExp (Bool _ _  ) = return TBool
+typeExp (Pair f s _) = do
   tf <- typeExp f
   ts <- typeExp s
   return $ TPair tf ts
-typeExp EmptySet    = return $ TSet TUnit
-typeExp (SetExt el) = do
+typeExp (EmptySet _ ) = return $ TSet TUnit
+typeExp (SetExt el _) = do
   tl <- typeExpList el
   return $ TSet tl
-typeExp (SetComp iList ex) = do
+typeExp (SetComp iList ex _) = do
   typeIterList iList
   t <- typeExp ex
   cleanIterList iList
   return $ TSet t
-typeExp (SetCompFilter iList filterEx ex) = do
+typeExp (SetCompFilter iList filterEx ex _) = do
   typeIterList iList
   filterT <- typeExp filterEx
   t       <- typeExp ex
   cleanIterList iList
   checkEqualType TBool filterT filterEx
   return $ TSet t
-typeExp (Var var) = do
+typeExp (Var var pos) = do
   -- This pattern matching should never fail because all
   -- the values in the environment are VTypes.
-  VType t <- getValue var
+  VType t <- getValue var pos
   return t
-typeExp (RetVal (VType t)) = do
+typeExp (RetVal (VType t) _) = do
   return t
-typeExp (FunApp funId ex) = do
+typeExp (FunApp funId ex pos) = do
   exType        <- typeExp ex
   -- This pattern matching should never fail because all
   -- the values in the environment are VTypes.
-  VType funType <- getValue funId
+  VType funType <- getValue funId pos
   case funType of
     TFun argType retType -> do
       checkEqualType argType exType ex
       return retType
     _ -> throwTypeMatch ("Type -> Type for identifier " ++ funId)
                         funType
-                        (FunApp funId ex)
-typeExp (UnOp Minus ex) = do
+                        (FunApp funId ex pos)
+typeExp (UnOp Minus ex _) = do
   t <- typeExp ex
   checkEqualType TInt t ex
   return TInt
-typeExp (UnOp First ex) = do
+typeExp (UnOp First ex _) = do
   t <- typeExp ex
   case t of
     TPair t1 _ -> return t1
     _          -> throwTypeMatch "[Type, Type]" t ex
-typeExp (UnOp Second ex) = do
+typeExp (UnOp Second ex _) = do
   t <- typeExp ex
   case t of
     TPair _ t2 -> return t2
     _          -> throwTypeMatch "[Type, Type]" t ex
-typeExp (UnOp Card ex) = do
+typeExp (UnOp Card ex _) = do
   t <- typeExp ex
   case t of
     TSet _ -> return TInt
     _      -> throwTypeMatch "set <Type>" t ex
-typeExp (BinOp Add   ex1 ex2) = typeBinOp TInt ex1 TInt ex2 TInt
-typeExp (BinOp Sub   ex1 ex2) = typeBinOp TInt ex1 TInt ex2 TInt
-typeExp (BinOp Mul   ex1 ex2) = typeBinOp TInt ex1 TInt ex2 TInt
-typeExp (BinOp Div   ex1 ex2) = typeBinOp TInt ex1 TInt ex2 TInt
-typeExp (BinOp Mod   ex1 ex2) = typeBinOp TInt ex1 TInt ex2 TInt
-typeExp (BinOp Range ex1 ex2) = typeBinOp TInt ex1 TInt ex2 (TSet TInt)
-typeExp (BinOp Lt    ex1 ex2) = typeBinOp TInt ex1 TInt ex2 TBool
-typeExp (BinOp Gt    ex1 ex2) = typeBinOp TInt ex1 TInt ex2 TBool
-typeExp (BinOp Eq    ex1 ex2) = do
+typeExp (BinOp Add   ex1 ex2 _) = typeBinOp TInt ex1 TInt ex2 TInt
+typeExp (BinOp Sub   ex1 ex2 _) = typeBinOp TInt ex1 TInt ex2 TInt
+typeExp (BinOp Mul   ex1 ex2 _) = typeBinOp TInt ex1 TInt ex2 TInt
+typeExp (BinOp Div   ex1 ex2 _) = typeBinOp TInt ex1 TInt ex2 TInt
+typeExp (BinOp Mod   ex1 ex2 _) = typeBinOp TInt ex1 TInt ex2 TInt
+typeExp (BinOp Range ex1 ex2 _) = typeBinOp TInt ex1 TInt ex2 (TSet TInt)
+typeExp (BinOp Lt    ex1 ex2 _) = typeBinOp TInt ex1 TInt ex2 TBool
+typeExp (BinOp Gt    ex1 ex2 _) = typeBinOp TInt ex1 TInt ex2 TBool
+typeExp (BinOp Eq    ex1 ex2 _) = do
   t1 <- typeExp ex1
   t2 <- typeExp ex2
   checkEqualType t1 t2 ex2
   return TBool
-typeExp (BinOp NEq  ex1 ex2) = typeExp (BinOp Eq ex1 ex2)
-typeExp (BinOp And  ex1 ex2) = typeBinOp TBool ex1 TBool ex2 TBool
-typeExp (BinOp Or   ex1 ex2) = typeBinOp TBool ex1 TBool ex2 TBool
-typeExp (BinOp Elem ex1 ex2) = do
+typeExp (BinOp NEq  ex1 ex2 pos) = typeExp (BinOp Eq ex1 ex2 pos)
+typeExp (BinOp And  ex1 ex2 _  ) = typeBinOp TBool ex1 TBool ex2 TBool
+typeExp (BinOp Or   ex1 ex2 _  ) = typeBinOp TBool ex1 TBool ex2 TBool
+typeExp (BinOp Elem ex1 ex2 _  ) = do
   t1 <- typeExp ex1
   t2 <- typeExp ex2
   checkEqualType (TSet t1) t2 ex2
   return TBool
-typeExp (BinOp Subset      ex1 ex2) = typeSetBinOp ex1 ex2 TBool
-typeExp (BinOp SubsetEq    ex1 ex2) = typeSetBinOp ex1 ex2 TBool
-typeExp (BinOp Union       ex1 ex2) = typeSetBinOp ex1 ex2 TUnit
-typeExp (BinOp Intersect   ex1 ex2) = typeSetBinOp ex1 ex2 TUnit
-typeExp (BinOp Diff        ex1 ex2) = typeSetBinOp ex1 ex2 TUnit
-typeExp (BinOp CartProduct ex1 ex2) = do
+typeExp (BinOp Subset      ex1 ex2 _) = typeSetBinOp ex1 ex2 TBool
+typeExp (BinOp SubsetEq    ex1 ex2 _) = typeSetBinOp ex1 ex2 TBool
+typeExp (BinOp Union       ex1 ex2 _) = typeSetBinOp ex1 ex2 TUnit
+typeExp (BinOp Intersect   ex1 ex2 _) = typeSetBinOp ex1 ex2 TUnit
+typeExp (BinOp Diff        ex1 ex2 _) = typeSetBinOp ex1 ex2 TUnit
+typeExp (BinOp CartProduct ex1 ex2 _) = do
   type1 <- typeExp ex1
   type2 <- typeExp ex2
   case type1 of
@@ -210,5 +213,5 @@ typeExp (BinOp CartProduct ex1 ex2) = do
       TSet elemType2 -> (return . TSet) $ TPair elemType1 elemType2
       _              -> throwTypeMatch "set <Type>" type2 ex2
     _ -> throwTypeMatch "set <Type>" type1 ex1
-typeExp (Quant Exists iterList ex) = typeQuant iterList ex
-typeExp (Quant ForAll iterList ex) = typeQuant iterList ex
+typeExp (Quant Exists iterList ex _) = typeQuant iterList ex
+typeExp (Quant ForAll iterList ex _) = typeQuant iterList ex

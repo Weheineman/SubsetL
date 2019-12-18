@@ -6,7 +6,7 @@ where
 import           MyLexer
 import           MyParser
 import           State
-import           Common
+import           AST
 import           TypeEval
 import           Eval
 import           System.Environment

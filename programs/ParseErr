@@ -1,0 +1,2 @@
+set <int> pepe := 1..1000;
+set <int> juan := 1/..1000
