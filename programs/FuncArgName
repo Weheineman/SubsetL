@@ -1,0 +1,3 @@
+int mauro := 5;
+int gradeGenerator (int mauro) := 2 * mauro;
+int gradeGianniALP := gradeGenerator(mauro)

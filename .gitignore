@@ -1,8 +1,6 @@
 *.hi
 *.o
 Main
-MyLexer.hs
-MyParser.hs
 .stack-work/
 SubsetL.cabal
 *~

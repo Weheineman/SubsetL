@@ -1,0 +1,2 @@
+int next(int n) := n + 1;
+int pepe := 3 + next

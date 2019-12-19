@@ -45,6 +45,7 @@ tokens :-
   \(                    { \pos str -> TokenLParen pos }
   \)                    { \pos str -> TokenRParen pos }
   \,                    { \pos str -> TokenComma pos }
+  \~                    { \pos str -> TokenNeg pos }
   \+                    { \pos str -> TokenPlus pos }
   \-                    { \pos str -> TokenMinus pos }
   \*                    { \pos str -> TokenTimes pos }
@@ -90,6 +91,7 @@ data Token =
   |  TokenLParen      {position :: AlexPosn}
   |  TokenRParen      {position :: AlexPosn}
   |  TokenComma       {position :: AlexPosn}
+  |  TokenNeg         {position :: AlexPosn}
   |  TokenPlus        {position :: AlexPosn}
   |  TokenMinus       {position :: AlexPosn}
   |  TokenTimes       {position :: AlexPosn}

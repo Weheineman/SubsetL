@@ -12,6 +12,7 @@ import AST
 %token
       int             { TokenInt _  _ }
       id              { TokenId _ _ }
+      '~'             { TokenNeg _ }
       '+'             { TokenPlus _  }
       '-'             { TokenMinus _  }
       '*'             { TokenTimes _  }
@@ -65,6 +66,7 @@ import AST
 %left '<' '>'
 %left '+' '-'
 %left '*' '/' '%'
+%right '~'
 %%
 
 Stm
@@ -96,7 +98,7 @@ Atom
   | '(' Exp ')'                             { $2 }
 
 UnOperation
-  : '-' Exp                                 { UnOp Minus $2 (tkPos $1) }
+  : '~' Exp                                 { UnOp Minus $2 (tkPos $1) }
   | first Exp                               { UnOp First $2 (tkPos $1) }
   | second Exp                              { UnOp Second $2 (tkPos $1) }
   | '#' Exp                                 { UnOp Card $2 (tkPos $1) }
